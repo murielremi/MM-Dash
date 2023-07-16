@@ -11,11 +11,13 @@ ui <- fluidPage(
 			highchartOutput("transactionEvolution")
 		),
 		column(6,
+			dateRangeInput("ndayaccounts_date_range", "Date Range", min="2001-03-01", max="2020-12-01", start="2011-03-01", end="2020-03-01"),
 			highchartOutput("nDayAccounteEvolutionComparison")
 		)
 	),
 	fluidRow(
 		column(6,
+			dateRangeInput("registeredaccag_date_range", "Date Range", min="2001-03-01", max="2020-12-01", start="2011-03-01", end="2020-03-01"),
 			highchartOutput("registeredAccountsAgents")
 		)
 	),
@@ -30,9 +32,11 @@ server <- function(input, output) {
 
 	regionGlobalVolume <- regionGlobalVolume %>% pivot_longer(cols=names(regionGlobalVolume)[-1], names_to="date") %>% as.data.frame()
 	regionGlobalVolume <- regionGlobalVolume %>% pivot_wider(names_from=Attribute, values_from=value) %>% as.data.frame() 
+	regionGlobalVolume$date <- as.POSIXct(regionGlobalVolume$date, format="%d/%m/%Y", tz="UTC")
+	regionGlobalVolume <- regionGlobalVolume[regionGlobalVolume$date>="2011-03-01",]
 
 	hc_transaction_evolution <- highchart() %>% 
-	hc_title(text="Transaction Evolution") %>%
+	hc_title(text="Evolution du nombre de transaction") %>%
 	hc_xAxis(categories= regionGlobalVolume$date)
 	for(n in names(regionGlobalVolume)[!names(regionGlobalVolume) %in% c("date", "All")]){
 		hc_transaction_evolution <- hc_transaction_evolution %>% hc_add_series(data=regionGlobalVolume[[n]], type="column", name=n)
@@ -55,9 +59,10 @@ server <- function(input, output) {
 	nDayAccountData <- nDayAccountData %>% pivot_wider(names_from = Attribute, values_from = value) %>% as.data.frame()
 	nDayAccountData$date <- as.POSIXct(nDayAccountData$date, format="%d/%m/%Y", tz="UTC")
 	nDayAccountData <- nDayAccountData[order(nDayAccountData$date),]
+	nDayAccountData <- nDayAccountData[nDayAccountData$date>="2011-03-01",]
 
 	hc_nday_accounts <- highchart() %>% 
-	hc_title(text="Evolution of 30 Days Accounts VS 90 Days Accounts") %>%
+	hc_title(text="Evolution active 30-day accounts vs active 90-day accounts") %>%
 	hc_xAxis(categories= nDayAccountData$date)
 	for(n in names(nDayAccountData)[-1]){
 		hc_nday_accounts <- hc_nday_accounts %>% hc_add_series(data=nDayAccountData[[n]], type="column", name=n)
@@ -79,9 +84,10 @@ server <- function(input, output) {
 	registeredAccountsAgents <- registeredAccountsAgents %>% pivot_wider(names_from = Measure, values_from = value) %>% as.data.frame()	
 	registeredAccountsAgents$date <- as.POSIXct(registeredAccountsAgents$date, format="%d/%m/%Y", tz="UTC")
 	registeredAccountsAgents <- registeredAccountsAgents[order(registeredAccountsAgents$date),]
+	registeredAccountsAgents <- registeredAccountsAgents[registeredAccountsAgents$date>="2011-03-01",]
 
 	hc_registeredAccountsAgents <- highchart() %>% 
-	hc_title(text="Evolution Registered Accounts VS Registered Agents") %>%
+	hc_title(text="Evolution registered accounts vs registered agents") %>%
 	hc_xAxis(categories= registeredAccountsAgents$date)
 	for(n in names(registeredAccountsAgents)[-1]){
 		hc_registeredAccountsAgents <- hc_registeredAccountsAgents %>% hc_add_series(data=registeredAccountsAgents[[n]], type="line", name=n)
