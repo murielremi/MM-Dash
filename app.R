@@ -17,6 +17,10 @@ ui <- fluidPage(
 	),
 	fluidRow(
 		column(6,
+			uiOutput("ratio_active_accag_year"),
+			highchartOutput("ratioActiveNdayAccountAgents")
+		),
+		column(6,
 			dateRangeInput("registeredaccag_date_range", "Date Range", min="2001-03-01", max="2020-12-01", start="2011-03-01", end="2020-03-01"),
 			highchartOutput("registeredAccountsAgents")
 		)
@@ -98,6 +102,25 @@ server <- function(input, output) {
 		hc_add_series(data=registeredAccountsAgents[["Registered Agents"]], type="line", name="Registered Agents")
 	})
 
+	output$ratio_active_accag_year <- renderUI({
+		selectInput("selectedYear", "Selectionner un trimestre", choices=names(mydata)[-c(1,2,3,4,5,6)], selected="01/12/2020")
+	})
+
+	output$ratioActiveNdayAccountAgents <- renderHighchart({
+		nDayActiveAccountsAgents <- mydata[mydata$Unit %in% c("Accounts", "Agents") & mydata$Attribute != "Registered",] %>% 
+		select(-Geo_view, -Geo_name, -Unit, -Attribute, -Metric)
+
+		nDayActiveAccountsAgents <- nDayActiveAccountsAgents %>% pivot_longer(cols=names(nDayActiveAccountsAgents)[-1], names_to="date") %>% 
+		as.data.frame() %>% 
+		group_by(date, Measure) %>% 
+		summarize(value=sum(value))
+
+		nDayActiveAccountsAgents <- nDayActiveAccountsAgents[nDayActiveAccountsAgents$date == input$selectedYear,]
+
+		highchart() %>% 
+		hc_title(text="Ratio active 30-day accounts vs active 30-day agents par pays") %>% 
+		hc_add_series(data=nDayActiveAccountsAgents, type="pie", hcaes(name=Measure, y=value))
+	})
 }
 
 # Run the application 
